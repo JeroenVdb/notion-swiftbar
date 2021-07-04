@@ -1,0 +1,21 @@
+{
+  "name": "notion-swiftbar",
+  "version": "1.0.0",
+  "description": "``` ln -s -v /Users/jvandenberghe/Projects/notion-swiftbar/build/ ~/swiftbarPlugins/notionSwiftbar chmod +x /Users/jvandenberghe/Projects/notion-swiftbar/build/exampe.60s.sh ```",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "run": "node ./src/notionswiftbar.60s.js",
+    "build": "cp ./src/notionswiftbar.60s.js ./build/",
+    "test": "NODE_OPTIONS=--experimental-vm-modules npx jest src/notionswiftbar.test.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@notionhq/client": "^0.1.9",
+    "bitbar": "^1.3.2"
+  },
+  "devDependencies": {
+    "jest": "^27.0.6"
+  }
+}
