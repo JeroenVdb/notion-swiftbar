@@ -28,7 +28,7 @@ const DATABASE_ID = 'c08eaef20d4b444b92867e5b4a689ffc';
  * Get todos from connected sources
  * @property {Todo[]} items - array of todo items
  */
-class TodosRepository {
+export class TodosRepository {
 	constructor() {}
 
 	async getAllOpenTodos() {
@@ -47,28 +47,20 @@ class TodosRepository {
 		return this.groupBy('project');
 	}
 
-	async getOpenTodosGroupedByStatus() {
-		if (!this.items) {
-			await this.fetchTodos()
-		}
-
-		return this.groupBy('status');
-	}
-
 	/**
 	 * Group todos by a todo property
-	 * @param {string} group - Property to group by
+	 * @param {string} propertyName - Property to group by
 	 * @returns {{(string): TodoGroup}} - Map of groups
 	 */
-	groupBy(group) {
+	groupBy(propertyName) {
 		const groups = {};
 
 		this.items.map(item => {
-			if (!groups.hasOwnProperty(item[group])) {
-				groups[item[group]] = new TodoGroup(item[group]);
+			if (!groups.hasOwnProperty(item[propertyName])) {
+				groups[item[propertyName]] = new TodoGroup(item[propertyName]);
 			}
 
-			groups[item[group]].addTodo(item)
+			groups[item[propertyName]].addTodo(item)
 		});
 
 		return groups;
@@ -94,7 +86,7 @@ class TodosRepository {
 			notionTodo.properties.Name.title[0].plain_text,
 			notionTodo.properties.Priority ? notionTodo.properties.Priority.select.name : null,
 			notionTodo.properties.Status ? notionTodo.properties.Status.select.name : null,
-			notionTodo.properties.Project ? notionTodo.properties.Project.multi_select[0].name : null,
+			notionTodo.properties.Project ? notionTodo.properties.Project.multi_select[0].name : null
 		)
 	}
 
@@ -132,16 +124,6 @@ class TodosRepository {
 	}
 }
 
-/**
- * A single todo item
- * @property {string} id
- * @property {string} title
- * @property {string} priority
- * @property {string} status
- * @property {string} project
- * @property {string} httpUrl
- * @property {string} notionUrl
- */
 class Todo {
 	/**
 	 * Create a single todo item
@@ -152,30 +134,32 @@ class Todo {
 	 * @param {string} project
 	 */
 	constructor(id, title, priority, status, project) {
+		/** @type {string} */
 		this.id = id;
+		/** @type {string} */
 		this.title = title;
+		/** @type {string} */
 		this.priority = priority;
+		/** @type {string} */
 		this.status = status;
+		/** @type {string} */
 		this.project = project;
+		/** @type {string} */
 		this.httpUrl = `https://notion.so/${this.id.replace(/-/g, '')}`;
+		/** @type {string} */
 		this.notionUrl = `notion://notion.so/${this.id.replace(/-/g, '')}`;
 	}
 }
 
-/**
- * Get todos from connected sources
- * @property {string} name - Name of the todo group
- * @property {Todo[]} items - List of todo items that are part of this group
- */
 export class TodoGroup {
 	/**
 	 * Create a new todo group
 	 * @param {string} name
-	 * @property {string} name - Name of the todo group
-	 * @property {Todo[]} items - List of todo items that are part of this group
 	 */
 	constructor(name) {
+		/** @type {string} */
 		this.name = name;
+		/** @type {Todo[]} */
 		this.items = [];
 	}
 
