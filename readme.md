@@ -2,6 +2,9 @@
 
 Swiftbar plugin to display my Notion todo items.
 
+![Example of the notion-swiftbar plugin](example.png "Swiftbar with Notion-swiftbar plugin")
+
+
 ## Install example plugin
 
 ```
