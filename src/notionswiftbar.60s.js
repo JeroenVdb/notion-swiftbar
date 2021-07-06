@@ -71,9 +71,9 @@ export class NotionTodoRepository {
 
 	/**
 	 * Fetch Notion todos
-	 * @returns {Promise<Todo[]>}
+	 * @returns {Promise<import("@notionhq/client/build/src/api-endpoints").Page[]>}
 	 */
-	async fetchTodos() {
+	async getNotionTodos() {
 		try {
 			/**
 			 * @type {typeof import("@notionhq/client/build/src/api-endpoints").DatabasesQueryResponse }
@@ -101,10 +101,19 @@ export class NotionTodoRepository {
 				}
 			);
 
-			return response.results.filter(this.isValidTodo).map(this.toTodo);
+			return response.results;
 		} catch (e) {
 			throw new Error(`Could not query the notion database: ${e.message}`)
 		}
+	}
+
+	/**
+	 * Fetch Notion todos
+	 * @returns {Promise<Todo[]>}
+	 */
+	async fetchTodos() {
+		const notionTodos = await this.getNotionTodos();
+		return notionTodos.filter(this.isValidTodo).map(this.toTodo)
 	}
 }
 
