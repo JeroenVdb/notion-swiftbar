@@ -75,6 +75,9 @@ export class NotionTodoRepository {
 	 */
 	async fetchTodos() {
 		try {
+			/**
+			 * @type {typeof import("@notionhq/client/build/src/api-endpoints").DatabasesQueryResponse }
+			 */
 			const response = await notion.databases.query(
 				{
 					database_id: DATABASE_ID,
@@ -237,6 +240,14 @@ class TodoView {
 	}
 }
 
+export function sortTodoProjectFirst(a) {
+	if (a.name.includes('Todo')) {
+		return -1;
+	}
+
+	return 0;
+}
+
 // Start
 
 const todosRepository = new NotionTodoRepository();
@@ -248,19 +259,10 @@ const groupedByProjectTodosView = Object.values(groupedByProjectTodos).sort(sort
 	return GroupedByTodoView.groupedByView(group)
 }).flat()
 
-export function sortTodoProjectFirst(a) {
-	if (a.name.includes('Todo')) {
-		return -1;
-	}
-
-	return 0;
-}
-
 const headerView = [{
 	text: `${openTodos.length} 🎒`,
 	dropdown: false
 }]
-
 const footerView = [
 	bitbar.separator,
 	{
