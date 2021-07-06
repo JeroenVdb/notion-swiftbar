@@ -1,4 +1,4 @@
-import { sortTodoProjectFirst, TodoGroup, TodosRepository } from './notionswiftbar.60s'
+import {sortTodoProjectFirst, Todo, TodoGroup} from './notionswiftbar.60s'
 
 test('should sort the groups so the Todo project always comes first', () => {
 	const todoGroup = new TodoGroup('Todo')
@@ -22,10 +22,4 @@ test('should sort the groups so the Todo project always comes first', () => {
 	).toStrictEqual(
 		[todoGroup, fooGroup, barGroup]
 	);
-});
-
-test('should get todos, grouped by project', () => {
-	const repo = new TodosRepository();
-	repo.getAllOpenTodos()
-
 });

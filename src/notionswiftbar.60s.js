@@ -25,46 +25,25 @@ const notion = new Client({ auth: process.env.NOTION_TODO_SECRET });
 const DATABASE_ID = 'c08eaef20d4b444b92867e5b4a689ffc';
 
 /**
- * Get todos from connected sources
- * @property {Todo[]} items - array of todo items
+ * Interface for classes that connect to todo sources
+ *
+ * @interface TodoRepository
  */
-export class TodosRepository {
+
+/**
+ * Get the todo items and convert them to a clean todo object
+ *
+ * @method
+ * @name TodoRepository#fetchTodos
+ * @returns {Promise<Todo[]>} An array containing todo items
+ */
+
+/**
+ * Get todos from Notion
+ * @implements {TodoRepository}
+ */
+export class NotionTodoRepository {
 	constructor() {}
-
-	async getAllOpenTodos() {
-		if (!this.items) {
-			await this.fetchTodos()
-		}
-
-		return this.items;
-	}
-
-	async getOpenTodosGroupedByProject() {
-		if (!this.items) {
-			await this.fetchTodos()
-		}
-
-		return this.groupBy('project');
-	}
-
-	/**
-	 * Group todos by a todo property
-	 * @param {string} propertyName - Property to group by
-	 * @returns {{(string): TodoGroup}} - Map of groups
-	 */
-	groupBy(propertyName) {
-		const groups = {};
-
-		this.items.map(item => {
-			if (!groups.hasOwnProperty(item[propertyName])) {
-				groups[item[propertyName]] = new TodoGroup(item[propertyName]);
-			}
-
-			groups[item[propertyName]].addTodo(item)
-		});
-
-		return groups;
-	}
 
 	/**
 	 * Returns true if the notionTodo is a proper page/todo
@@ -90,9 +69,11 @@ export class TodosRepository {
 		)
 	}
 
+	/**
+	 * Fetch Notion todos
+	 * @returns {Promise<Todo[]>}
+	 */
 	async fetchTodos() {
-		this.items = []
-
 		try {
 			const response = await notion.databases.query(
 				{
@@ -117,14 +98,59 @@ export class TodosRepository {
 				}
 			);
 
-			this.items = response.results.filter(this.isValidTodo).map(this.toTodo);
+			return response.results.filter(this.isValidTodo).map(this.toTodo);
 		} catch (e) {
 			throw new Error(`Could not query the notion database: ${e.message}`)
 		}
 	}
 }
 
-class Todo {
+export class Todos {
+	constructor(repository) {
+		this.repository = repository;
+	}
+
+	async getAllOpenTodos() {
+		if (!this.items) {
+			this.items = await this.repository.fetchTodos()
+		}
+
+		return this.items;
+	}
+
+	/**
+	 * Group todos by by project property
+	 * @returns {{(string): TodoGroup}} - Map of groups
+	 */
+	async getOpenTodosGroupedByProject() {
+		if (!this.items) {
+			this.items = await this.repository.fetchTodos()
+		}
+
+		return this.groupBy('project');
+	}
+
+	/**
+	 * Group todos by a todo property
+	 * @param {string} propertyName - Property to group by
+	 * @returns {{(string): TodoGroup}} - Map of groups
+	 */
+	groupBy(propertyName) {
+		const groups = {};
+
+		this.items.map(item => {
+			if (!groups.hasOwnProperty(item[propertyName])) {
+				groups[item[propertyName]] = new TodoGroup(item[propertyName]);
+			}
+
+			groups[item[propertyName]].addTodo(item)
+		});
+
+		return groups;
+	}
+}
+
+export class Todo {
 	/**
 	 * Create a single todo item
 	 * @param {string} id
@@ -213,7 +239,8 @@ class TodoView {
 
 // Start
 
-const todos = await new TodosRepository();
+const todosRepository = new NotionTodoRepository();
+const todos = new Todos(todosRepository);
 const openTodos = await todos.getAllOpenTodos();
 const groupedByProjectTodos = await todos.getOpenTodosGroupedByProject();
 
