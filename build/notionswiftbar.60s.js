@@ -18,66 +18,66 @@ import bitbar from 'bitbar';
 import { Client } from '@notionhq/client';
 const notion = new Client({ auth: process.env.NOTION_TODO_SECRET });
 
+/**
+ * Notion database id
+ * @type {string} - Notion database id
+ */
 const DATABASE_ID = 'c08eaef20d4b444b92867e5b4a689ffc';
 
-class TodosRepository {
+/**
+ * Interface for classes that connect to todo sources
+ *
+ * @interface TodoRepository
+ */
+
+/**
+ * Get the todo items and convert them to a clean todo object
+ *
+ * @method
+ * @name TodoRepository#fetchTodos
+ * @returns {Promise<Todo[]>} An array containing todo items
+ */
+
+/**
+ * Get todos from Notion
+ * @implements {TodoRepository}
+ */
+export class NotionTodoRepository {
 	constructor() {}
 
-	async getAllOpenTodos() {
-		if (!this.items) {
-			await this.fetchTodos()
-		}
-		return this.items;
-	}
-
-	async getOpenTodosGroupedByProject() {
-		if (!this.items) {
-			await this.fetchTodos()
-		}
-
-		return this.groupBy('project');
-	}
-
-	async getOpenTodosGroupedByStatus() {
-		if (!this.items) {
-			await this.fetchTodos()
-		}
-
-		return this.groupBy('status');
-	}
-
-	groupBy(group) {
-		const groups = {};
-
-		this.items.map(item => {
-			if (!groups.hasOwnProperty(item[group])) {
-				groups[item[group]] = new TodoGroup(item[group]);
-			}
-
-			groups[item[group]].addTodo(item)
-		});
-
-		return groups;
-	}
-
+	/**
+	 * Returns true if the notionTodo is a proper page/todo
+	 * @param notionTodo
+	 * @returns {boolean}
+	 */
 	isValidTodo(notionTodo) {
 		return notionTodo.properties.Name.title.length > 0;
 	}
 
+	/**
+	 * Convert a Notion todo item to a todo item
+	 * @param notionTodo
+	 * @returns {Todo}
+	 */
 	toTodo(notionTodo) {
 		return new Todo(
 			notionTodo.id,
 			notionTodo.properties.Name.title[0].plain_text,
 			notionTodo.properties.Priority ? notionTodo.properties.Priority.select.name : null,
 			notionTodo.properties.Status ? notionTodo.properties.Status.select.name : null,
-			notionTodo.properties.Project ? notionTodo.properties.Project.multi_select[0].name : null,
+			notionTodo.properties.Project ? notionTodo.properties.Project.multi_select[0].name : null
 		)
 	}
 
+	/**
+	 * Fetch Notion todos
+	 * @returns {Promise<Todo[]>}
+	 */
 	async fetchTodos() {
-		this.items = []
-
 		try {
+			/**
+			 * @type {typeof import("@notionhq/client/build/src/api-endpoints").DatabasesQueryResponse }
+			 */
 			const response = await notion.databases.query(
 				{
 					database_id: DATABASE_ID,
@@ -101,31 +101,101 @@ class TodosRepository {
 				}
 			);
 
-			this.items = response.results.filter(this.isValidTodo).map(this.toTodo);
+			return response.results.filter(this.isValidTodo).map(this.toTodo);
 		} catch (e) {
 			throw new Error(`Could not query the notion database: ${e.message}`)
 		}
 	}
 }
 
-class Todo {
+export class Todos {
+	constructor(repository) {
+		this.repository = repository;
+	}
+
+	async getAllOpenTodos() {
+		if (!this.items) {
+			this.items = await this.repository.fetchTodos()
+		}
+
+		return this.items;
+	}
+
+	/**
+	 * Group todos by by project property
+	 * @returns {{(string): TodoGroup}} - Map of groups
+	 */
+	async getOpenTodosGroupedByProject() {
+		if (!this.items) {
+			this.items = await this.repository.fetchTodos()
+		}
+
+		return this.groupBy('project');
+	}
+
+	/**
+	 * Group todos by a todo property
+	 * @param {string} propertyName - Property to group by
+	 * @returns {{(string): TodoGroup}} - Map of groups
+	 */
+	groupBy(propertyName) {
+		const groups = {};
+
+		this.items.map(item => {
+			if (!groups.hasOwnProperty(item[propertyName])) {
+				groups[item[propertyName]] = new TodoGroup(item[propertyName]);
+			}
+
+			groups[item[propertyName]].addTodo(item)
+		});
+
+		return groups;
+	}
+}
+
+export class Todo {
+	/**
+	 * Create a single todo item
+	 * @param {string} id
+	 * @param {string} title
+	 * @param {string} priority
+	 * @param {string} status
+	 * @param {string} project
+	 */
 	constructor(id, title, priority, status, project) {
+		/** @type {string} */
 		this.id = id;
+		/** @type {string} */
 		this.title = title;
+		/** @type {string} */
 		this.priority = priority;
+		/** @type {string} */
 		this.status = status;
+		/** @type {string} */
 		this.project = project;
+		/** @type {string} */
 		this.httpUrl = `https://notion.so/${this.id.replace(/-/g, '')}`;
+		/** @type {string} */
 		this.notionUrl = `notion://notion.so/${this.id.replace(/-/g, '')}`;
 	}
 }
 
-class TodoGroup {
+export class TodoGroup {
+	/**
+	 * Create a new todo group
+	 * @param {string} name
+	 */
 	constructor(name) {
+		/** @type {string} */
 		this.name = name;
+		/** @type {Todo[]} */
 		this.items = [];
 	}
 
+	/**
+	 * Add a todo item to this group
+	 * @param {Todo} todo
+	 */
 	addTodo(todo) {
 		this.items.push(todo);
 	}
@@ -145,6 +215,11 @@ class GroupedByTodoView {
 }
 
 class TodoView {
+	/**
+	 * Create a single todo view
+	 * @param {Todo} todo
+	 * @returns {[]}
+	 */
 	static todoToView(todo) {
 		return [{
 			text: `${todo.status === 'In Progress' ? '🚧 ' : ''} ${todo.title} ${todo.priority.includes('High') ? '\t(' + todo.priority + ')' : ''}`,
@@ -165,16 +240,6 @@ class TodoView {
 	}
 }
 
-// Start
-
-const todos = await new TodosRepository();
-const openTodos = await todos.getAllOpenTodos();
-const groupedByProjectTodos = await todos.getOpenTodosGroupedByProject();
-
-const groupedByProjectTodosView = Object.values(groupedByProjectTodos).sort(sortTodoProjectFirst).map(group => {
-	return GroupedByTodoView.groupedByView(group)
-}).flat()
-
 export function sortTodoProjectFirst(a) {
 	if (a.name.includes('Todo')) {
 		return -1;
@@ -183,11 +248,21 @@ export function sortTodoProjectFirst(a) {
 	return 0;
 }
 
+// Start
+
+const todosRepository = new NotionTodoRepository();
+const todos = new Todos(todosRepository);
+const openTodos = await todos.getAllOpenTodos();
+const groupedByProjectTodos = await todos.getOpenTodosGroupedByProject();
+
+const groupedByProjectTodosView = Object.values(groupedByProjectTodos).sort(sortTodoProjectFirst).map(group => {
+	return GroupedByTodoView.groupedByView(group)
+}).flat()
+
 const headerView = [{
 	text: `${openTodos.length} 🎒`,
 	dropdown: false
 }]
-
 const footerView = [
 	bitbar.separator,
 	{
