@@ -1,4 +1,4 @@
-import {NotionTodoRepository, Todo} from './notionswiftbar.60s'
+import {NotionTodoRepository, Todo, Todos} from './notionswiftbar.60s'
 import {jest} from '@jest/globals'
 
 let notionTodo = {}
@@ -170,6 +170,19 @@ test('should create a todo item from a notion todo item', async () => {
 	expect(todo.priority).toBe('Medium');
 	expect(todo.httpUrl).toBe('https://notion.so/468d94ac2ca54547b40c952a2d0fbfe7');
 	expect(todo.notionUrl).toBe('notion://notion.so/468d94ac2ca54547b40c952a2d0fbfe7');
+});
+
+test('should only fetch the notion todos once', async () => {
+	const repo = new NotionTodoRepository();
+	const notionTodoRepositorySpy = jest.spyOn(repo, 'getNotionTodos')
+	const todos = new Todos(repo);
+
+	expect(notionTodoRepositorySpy).toBeCalledTimes(0);
+
+	await todos.getAllOpenTodos();
+	await todos.getOpenTodosGroupedByProject();
+
+	expect(notionTodoRepositorySpy).toBeCalledTimes(1);
 });
 
 afterEach(() => {

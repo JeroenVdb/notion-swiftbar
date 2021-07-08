@@ -76,7 +76,7 @@ export class NotionTodoRepository {
 	async getNotionTodos() {
 		try {
 			/**
-			 * @type {typeof import("@notionhq/client/build/src/api-endpoints").DatabasesQueryResponse }
+			 * @type {import("@notionhq/client/build/src/api-endpoints").DatabasesQueryResponse }
 			 */
 			const response = await notion.databases.query(
 				{
@@ -227,7 +227,7 @@ class TodoView {
 	/**
 	 * Create a single todo view
 	 * @param {Todo} todo
-	 * @returns {[]}
+	 * @returns {SwiftbarView[]}
 	 */
 	static todoToView(todo) {
 		return [{
@@ -264,14 +264,22 @@ const todos = new Todos(todosRepository);
 const openTodos = await todos.getAllOpenTodos();
 const groupedByProjectTodos = await todos.getOpenTodosGroupedByProject();
 
+/**
+ * @typedef {import("bitbar").bitbar.Options} SwiftbarView
+ */
+
+/** @type {SwiftbarView[]} */
 const groupedByProjectTodosView = Object.values(groupedByProjectTodos).sort(sortTodoProjectFirst).map(group => {
 	return GroupedByTodoView.groupedByView(group)
 }).flat()
 
+/** @type {SwiftbarView[]} */
 const headerView = [{
 	text: `${openTodos.length} 🎒`,
 	dropdown: false
 }]
+
+/** @type {SwiftbarView[]} */
 const footerView = [
 	bitbar.separator,
 	{

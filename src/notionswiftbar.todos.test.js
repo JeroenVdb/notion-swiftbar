@@ -1,13 +1,13 @@
 import {NotionTodoRepository, Todo, Todos} from './notionswiftbar.60s'
 import {jest} from '@jest/globals'
 
-let NotionTodoRepositorySpy;
+let notionTodoRepositorySpy;
 
 beforeEach(() => {
 	const todoOne = new Todo('ID_1', 'TITLE', 'PRIORITY', 'STATUS', 'PROJECT_1')
 	const todoTwo = new Todo('ID_2', 'TITLE', 'PRIORITY', 'STATUS', 'PROJECT_2')
 	const todoThree = new Todo('ID_3', 'TITLE', 'PRIORITY', 'STATUS', 'PROJECT_1')
-	NotionTodoRepositorySpy = jest.spyOn(NotionTodoRepository.prototype, 'fetchTodos').mockImplementation(() => [todoOne, todoTwo, todoThree]);
+	notionTodoRepositorySpy = jest.spyOn(NotionTodoRepository.prototype, 'fetchTodos').mockImplementation(() => [todoOne, todoTwo, todoThree]);
 
 });
 
@@ -32,6 +32,6 @@ test('should get todos, grouped by project', async () => {
 });
 
 afterEach(() => {
-	expect(NotionTodoRepositorySpy).toBeCalledTimes(1)
+	expect(notionTodoRepositorySpy).toBeCalledTimes(1)
 	jest.restoreAllMocks();
 });
