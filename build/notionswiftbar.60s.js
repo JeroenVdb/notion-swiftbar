@@ -1,4 +1,4 @@
-#!/usr/bin/env /Users/jvandenberghe/.nvm/versions/node/v14.16.0/bin/node
+#!/usr/bin/env node
 
 // <bitbar.title>Notion Todo</bitbar.title>
 // <bitbar.version>v1.0</bitbar.version>
@@ -12,6 +12,7 @@
 // <swiftbar.hideLastUpdated>true</swiftbar.hideLastUpdated>
 // <swiftbar.hideDisablePlugin>true</swiftbar.hideDisablePlugin>
 // <swiftbar.hideSwiftBar>true</swiftbar.hideSwiftBar>
+// <swiftbar.environment>['databaseId':'c08eaef20d4b444b92867e5b4a689ffc']</swiftbar.environment>
 
 import bitbar from 'bitbar';
 
@@ -22,7 +23,7 @@ const notion = new Client({ auth: process.env.NOTION_TODO_SECRET });
  * Notion database id
  * @type {string} - Notion database id
  */
-const DATABASE_ID = 'c08eaef20d4b444b92867e5b4a689ffc';
+const DATABASE_ID = process.env.databaseId || 'c08eaef20d4b444b92867e5b4a689ffc';
 
 /**
  * Interface for classes that connect to todo sources
@@ -71,12 +72,12 @@ export class NotionTodoRepository {
 
 	/**
 	 * Fetch Notion todos
-	 * @returns {Promise<Todo[]>}
+	 * @returns {Promise<import("@notionhq/client/build/src/api-endpoints").Page[]>}
 	 */
-	async fetchTodos() {
+	async getNotionTodos() {
 		try {
 			/**
-			 * @type {typeof import("@notionhq/client/build/src/api-endpoints").DatabasesQueryResponse }
+			 * @type {import("@notionhq/client/build/src/api-endpoints").DatabasesQueryResponse }
 			 */
 			const response = await notion.databases.query(
 				{
@@ -86,6 +87,11 @@ export class NotionTodoRepository {
 							"property": "Status",
 							"select": {
 								"does_not_equal": "Completed"
+							}
+						},{
+							"property": "Status",
+							"select": {
+								"does_not_equal": "Chase"
 							}
 						},{
 							"property": "Owner",
@@ -101,10 +107,25 @@ export class NotionTodoRepository {
 				}
 			);
 
-			return response.results.filter(this.isValidTodo).map(this.toTodo);
+			return response.results;
 		} catch (e) {
-			throw new Error(`Could not query the notion database: ${e.message}`)
+			console.error(`Could not query the notion database: ${e.message}`)
+
+			if (e.code === 'ENOTFOUND') {
+				process.exit(0);
+			}
+
+			process.exit(1);
 		}
+	}
+
+	/**
+	 * Fetch Notion todos
+	 * @returns {Promise<Todo[]>}
+	 */
+	async fetchTodos() {
+		const notionTodos = await this.getNotionTodos();
+		return notionTodos.filter(this.isValidTodo).map(this.toTodo)
 	}
 }
 
@@ -218,7 +239,7 @@ class TodoView {
 	/**
 	 * Create a single todo view
 	 * @param {Todo} todo
-	 * @returns {[]}
+	 * @returns {SwiftbarView[]}
 	 */
 	static todoToView(todo) {
 		return [{
@@ -255,14 +276,22 @@ const todos = new Todos(todosRepository);
 const openTodos = await todos.getAllOpenTodos();
 const groupedByProjectTodos = await todos.getOpenTodosGroupedByProject();
 
+/**
+ * @typedef {import("bitbar").bitbar.Options} SwiftbarView
+ */
+
+/** @type {SwiftbarView[]} */
 const groupedByProjectTodosView = Object.values(groupedByProjectTodos).sort(sortTodoProjectFirst).map(group => {
 	return GroupedByTodoView.groupedByView(group)
 }).flat()
 
+/** @type {SwiftbarView[]} */
 const headerView = [{
 	text: `${openTodos.length} 🎒`,
 	dropdown: false
 }]
+
+/** @type {SwiftbarView[]} */
 const footerView = [
 	bitbar.separator,
 	{

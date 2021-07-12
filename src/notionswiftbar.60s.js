@@ -1,4 +1,4 @@
-#!/usr/bin/env /Users/jvandenberghe/.nvm/versions/node/v14.16.0/bin/node
+#!/usr/bin/env node
 
 // <bitbar.title>Notion Todo</bitbar.title>
 // <bitbar.version>v1.0</bitbar.version>
@@ -12,6 +12,7 @@
 // <swiftbar.hideLastUpdated>true</swiftbar.hideLastUpdated>
 // <swiftbar.hideDisablePlugin>true</swiftbar.hideDisablePlugin>
 // <swiftbar.hideSwiftBar>true</swiftbar.hideSwiftBar>
+// <swiftbar.environment>['databaseId':'c08eaef20d4b444b92867e5b4a689ffc']</swiftbar.environment>
 
 import bitbar from 'bitbar';
 
@@ -22,7 +23,7 @@ const notion = new Client({ auth: process.env.NOTION_TODO_SECRET });
  * Notion database id
  * @type {string} - Notion database id
  */
-const DATABASE_ID = 'c08eaef20d4b444b92867e5b4a689ffc';
+const DATABASE_ID = process.env.databaseId || 'c08eaef20d4b444b92867e5b4a689ffc';
 
 /**
  * Interface for classes that connect to todo sources
@@ -88,6 +89,11 @@ export class NotionTodoRepository {
 								"does_not_equal": "Completed"
 							}
 						},{
+							"property": "Status",
+							"select": {
+								"does_not_equal": "Chase"
+							}
+						},{
 							"property": "Owner",
 							"select": {
 								"does_not_equal": "Ludwig Van den Berghe"
@@ -103,7 +109,13 @@ export class NotionTodoRepository {
 
 			return response.results;
 		} catch (e) {
-			throw new Error(`Could not query the notion database: ${e.message}`)
+			console.error(`Could not query the notion database: ${e.message}`)
+
+			if (e.code === 'ENOTFOUND') {
+				process.exit(0);
+			}
+
+			process.exit(1);
 		}
 	}
 
