@@ -67,7 +67,7 @@ export class NotionTodoRepository {
 			notionTodo.properties.Priority ? notionTodo.properties.Priority.select.name : null,
 			notionTodo.properties.Status ? notionTodo.properties.Status.select.name : null,
 			notionTodo.properties.Project ? notionTodo.properties.Project.multi_select[0].name : null
-		)
+		);
 	}
 
 	/**
@@ -79,37 +79,41 @@ export class NotionTodoRepository {
 			/**
 			 * @type {import("@notionhq/client/build/src/api-endpoints").DatabasesQueryResponse }
 			 */
-			const response = await notion.databases.query(
-				{
-					database_id: DATABASE_ID,
-					filter: {
-						and: [{
-							"property": "Status",
-							"select": {
-								"does_not_equal": "Completed"
-							}
-						},{
-							"property": "Status",
-							"select": {
-								"does_not_equal": "Chase"
-							}
-						},{
-							"property": "Owner",
-							"select": {
-								"does_not_equal": "Ludwig Van den Berghe"
-							}
-						}]
-					},
-					sorts: [{
+			const response = await notion.databases.query({
+				database_id: DATABASE_ID,
+				filter: {
+					and: [
+						{
+							property: 'Status',
+							select: {
+								does_not_equal: 'Completed',
+							},
+						},
+						{
+							property: 'Status',
+							select: {
+								does_not_equal: 'Chase',
+							},
+						},
+						{
+							property: 'Owner',
+							select: {
+								does_not_equal: 'Ludwig Van den Berghe',
+							},
+						},
+					],
+				},
+				sorts: [
+					{
 						property: 'Priority',
 						direction: 'ascending',
-					}]
-				}
-			);
+					},
+				],
+			});
 
 			return response.results;
 		} catch (e) {
-			console.error(`Could not query the notion database: ${e.message}`)
+			console.error(`Could not query the notion database: ${e.message}`);
 
 			if (e.code === 'ENOTFOUND') {
 				process.exit(0);
@@ -125,7 +129,7 @@ export class NotionTodoRepository {
 	 */
 	async fetchTodos() {
 		const notionTodos = await this.getNotionTodos();
-		return notionTodos.filter(this.isValidTodo).map(this.toTodo)
+		return notionTodos.filter(this.isValidTodo).map(this.toTodo);
 	}
 }
 
@@ -136,7 +140,7 @@ export class Todos {
 
 	async getAllOpenTodos() {
 		if (!this.items) {
-			this.items = await this.repository.fetchTodos()
+			this.items = await this.repository.fetchTodos();
 		}
 
 		return this.items;
@@ -148,7 +152,7 @@ export class Todos {
 	 */
 	async getOpenTodosGroupedByProject() {
 		if (!this.items) {
-			this.items = await this.repository.fetchTodos()
+			this.items = await this.repository.fetchTodos();
 		}
 
 		return this.groupBy('project');
@@ -162,12 +166,12 @@ export class Todos {
 	groupBy(propertyName) {
 		const groups = {};
 
-		this.items.map(item => {
+		this.items.map((item) => {
 			if (!groups.hasOwnProperty(item[propertyName])) {
 				groups[item[propertyName]] = new TodoGroup(item[propertyName]);
 			}
 
-			groups[item[propertyName]].addTodo(item)
+			groups[item[propertyName]].addTodo(item);
 		});
 
 		return groups;
@@ -224,14 +228,14 @@ export class TodoGroup {
 
 class GroupedByTodoView {
 	static groupedByView(group) {
-		const todosView = group.items.map(TodoView.todoToView).flat()
+		const todosView = group.items.map(TodoView.todoToView).flat();
 		return [
 			bitbar.separator,
 			{
-				text: group.name
+				text: group.name,
 			},
-			...todosView
-		]
+			...todosView,
+		];
 	}
 }
 
@@ -242,22 +246,28 @@ class TodoView {
 	 * @returns {SwiftbarView[]}
 	 */
 	static todoToView(todo) {
-		return [{
-			text: `${todo.status === 'In Progress' ? '🚧 ' : ''} ${todo.title} ${todo.priority.includes('High') ? '\t(' + todo.priority + ')' : ''}`,
-			href: todo.notionUrl
-		}, {
-			text: '-- Complete',
-			bash: '/Users/jvandenberghe/Projects/notion-swiftbar/src/update-todo-status.js',
-			param0: 'Completed',
-			param1: todo.id,
-			terminal: false
-		}, {
-			text: '-- In Progress',
-			bash: '/Users/jvandenberghe/Projects/notion-swiftbar/src/update-todo-status.js',
-			param0: 'In Progress',
-			param1: todo.id,
-			terminal: false
-		}]
+		return [
+			{
+				text: `${todo.status === 'In Progress' ? '🚧 ' : ''} ${todo.title} ${
+					todo.priority.includes('High') ? '\t(' + todo.priority + ')' : ''
+				}`,
+				href: todo.notionUrl,
+			},
+			{
+				text: '-- Complete',
+				bash: '/Users/jvandenberghe/Projects/notion-swiftbar/src/update-todo-status.js',
+				param0: 'Completed',
+				param1: todo.id,
+				terminal: false,
+			},
+			{
+				text: '-- In Progress',
+				bash: '/Users/jvandenberghe/Projects/notion-swiftbar/src/update-todo-status.js',
+				param0: 'In Progress',
+				param1: todo.id,
+				terminal: false,
+			},
+		];
 	}
 }
 
@@ -281,27 +291,28 @@ const groupedByProjectTodos = await todos.getOpenTodosGroupedByProject();
  */
 
 /** @type {SwiftbarView[]} */
-const groupedByProjectTodosView = Object.values(groupedByProjectTodos).sort(sortTodoProjectFirst).map(group => {
-	return GroupedByTodoView.groupedByView(group)
-}).flat()
+const groupedByProjectTodosView = Object.values(groupedByProjectTodos)
+	.sort(sortTodoProjectFirst)
+	.map((group) => {
+		return GroupedByTodoView.groupedByView(group);
+	})
+	.flat();
 
 /** @type {SwiftbarView[]} */
-const headerView = [{
-	text: `${openTodos.length} 🎒`,
-	dropdown: false
-}]
+const headerView = [
+	{
+		text: `${openTodos.length} 🎒`,
+		dropdown: false,
+	},
+];
 
 /** @type {SwiftbarView[]} */
 const footerView = [
 	bitbar.separator,
 	{
 		text: `Open in Notion`,
-		href: 'notion://notion.so/jvandenberghe/c08eaef20d4b444b92867e5b4a689ffc?v=57de708ff176477bb57cfb1241c66d45'
-	}
-]
+		href: 'notion://notion.so/jvandenberghe/c08eaef20d4b444b92867e5b4a689ffc?v=57de708ff176477bb57cfb1241c66d45',
+	},
+];
 
-bitbar([
-	...headerView,
-	...groupedByProjectTodosView,
-	...footerView
-]);
+bitbar([...headerView, ...groupedByProjectTodosView, ...footerView]);
