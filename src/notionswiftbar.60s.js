@@ -64,9 +64,9 @@ export class NotionTodoRepository {
 		return new Todo(
 			notionTodo.id,
 			notionTodo.properties.Name.title[0].plain_text,
-			notionTodo.properties.Priority ? notionTodo.properties.Priority.select.name : null,
-			notionTodo.properties.Status ? notionTodo.properties.Status.select.name : null,
-			notionTodo.properties.Project ? notionTodo.properties.Project.multi_select[0].name : null
+			notionTodo.properties.Priority ? notionTodo.properties.Priority.select.name : '',
+			notionTodo.properties.Status ? notionTodo.properties.Status.select.name : '',
+			notionTodo.properties.Project && notionTodo.properties.Project.multi_select.length > 0 ? notionTodo.properties.Project.multi_select[0].name : ''
 		);
 	}
 
@@ -183,9 +183,9 @@ export class Todo {
 	 * Create a single todo item
 	 * @param {string} id
 	 * @param {string} title
-	 * @param {string} priority
-	 * @param {string} status
-	 * @param {string} project
+	 * @param {string | null} priority
+	 * @param {string | null} status
+	 * @param {string | null} project
 	 */
 	constructor(id, title, priority, status, project) {
 		/** @type {string} */
@@ -202,6 +202,10 @@ export class Todo {
 		this.httpUrl = `https://notion.so/${this.id.replace(/-/g, '')}`;
 		/** @type {string} */
 		this.notionUrl = `notion://notion.so/${this.id.replace(/-/g, '')}`;
+	}
+
+	isPriorityHigh() {
+		return this.priority && this.priority.includes('High')
 	}
 }
 
@@ -249,7 +253,7 @@ class TodoView {
 		return [
 			{
 				text: `${todo.status === 'In Progress' ? '🚧 ' : ''} ${todo.title} ${
-					todo.priority.includes('High') ? '\t(' + todo.priority + ')' : ''
+					todo.isPriorityHigh() ? '\t(' + todo.priority + ')' : ''
 				}`,
 				href: todo.notionUrl,
 			},
@@ -272,7 +276,7 @@ class TodoView {
 }
 
 export function sortTodoProjectFirst(a) {
-	if (a.name.includes('Todo')) {
+	if (a.name && a.name.includes('Todo')) {
 		return -1;
 	}
 
